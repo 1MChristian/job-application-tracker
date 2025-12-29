@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      body { background-color: #f8f9fa; padding-top: 20px; padding-bottom: 40px; }
+      .container { max-width: 600px; }
+      .card { border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+      .btn-custom { width: 100%; margin-bottom: 10px; }
+      .loading { display: none; }
+      
+      /* Settings Button (Top Right) */
+      .settings-btn { position: absolute; top: 20px; right: 20px; cursor: pointer; color: #6c757d; }
+      .settings-btn:hover { color: #0d6efd; }
+
+      @media (max-width: 400px) {
+        h2 { font-size: 1.5rem; }
+        .btn { padding: 12px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container position-relative">
+      
+      <!-- Settings Icon -->
+      <div class="settings-btn" onclick="toggleSettings()" title="Settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-gear-fill" viewBox="0 0 16 16">
+          <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.86z"/>
+        </svg>
+      </div>
+
+      <div class="card p-4">
+        <h2 class="text-center mb-4">🚀 Job Tracker</h2>
+        
+        <!-- SETTINGS PANEL (Hidden by default) -->
+        <div id="settingsPanel" class="mb-4 p-3 bg-light rounded" style="display:none; border: 1px solid #dee2e6;">
+          <h5 class="mb-3">⚙️ App Settings</h5>
+          <div class="mb-3">
+            <label class="form-label small">Your Gemini API Key</label>
+            <input type="password" id="apiKeyInput" class="form-control" placeholder="AIzaSy...">
+            <div class="form-text">Required for "Find from Email". Key is stored securely in your private user properties.</div>
+          </div>
+          <button class="btn btn-dark btn-sm w-100" onclick="saveKey()">Save API Key</button>
+        </div>
+
+        <!-- MAIN FORM -->
+        <form id="jobForm" onsubmit="handleFormSubmit(this)">
+          
+          <div class="mb-3">
+            <label class="form-label">Company *</label>
+            <input type="text" class="form-control" name="company" required placeholder="e.g. Google">
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Job Title *</label>
+            <input type="text" class="form-control" name="jobTitle" required placeholder="e.g. Product Manager">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Description / Notes</label>
+            <textarea class="form-control" name="description" rows="2" placeholder="Paste job URL or notes here..."></textarea>
+          </div>
+
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label class="form-label">Status</label>
+              <select class="form-select" name="status">
+                <option value="Applied">Applied</option>
+                <option value="Interviewing">Interviewing</option>
+                <option value="Offer">Offer</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
+            <div class="col-6 mb-3">
+               <label class="form-label">Source</label>
+               <input type="text" class="form-control" name="source" placeholder="LinkedIn">
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Recruiter Email (Optional)</label>
+            <input type="email" class="form-control" name="email" placeholder="recruiter@company.com">
+          </div>
+
+          <!-- CALENDAR & REMINDER SECTION -->
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Deadline (Date & Time)</label>
+              <input type="datetime-local" class="form-control" name="nextStepDate">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Set Reminder</label>
+              <select class="form-select" name="reminderMinutes">
+                <option value="30">30 minutes before</option>
+                <option value="1440">1 Day before</option>
+                <option value="4320" selected>3 Days before (Default)</option>
+                <option value="10080">1 Week before</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-custom btn-lg">Add Job Manually</button>
+        </form>
+        
+        <hr>
+        
+        <!-- SMART FEATURES -->
+        <div class="d-grid gap-2">
+          <button class="btn btn-outline-secondary" onclick="scanEmails()">
+            📧 Find from email (Gemini)
+          </button>
+          <button class="btn btn-outline-info" onclick="applyFilter()">
+            🌪️ Filter Active Jobs
+          </button>
+        </div>
+
+        <div id="output" class="alert alert-success mt-3" style="display:none"></div>
+        
+        <div id="loader" class="text-center mt-3 loading">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2 text-muted small">Processing...</p>
+        </div>
+        
+      </div>
+    </div>
+
+    <script>
+      // Toggle Settings Panel
+      function toggleSettings() {
+        const panel = document.getElementById('settingsPanel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      }
+
+      function saveKey() {
+        const key = document.getElementById('apiKeyInput').value;
+        if(!key) return alert("Please enter a key");
+        
+        showLoader(true);
+        google.script.run
+          .withSuccessHandler((res) => {
+             showLoader(false);
+             toggleSettings();
+             alert(res.message);
+          })
+          .withFailureHandler(onFailure)
+          .saveUserApiKey(key);
+      }
+
+      function handleFormSubmit(formObject) {
+        event.preventDefault(); 
+        showLoader(true);
+        google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFailure).addJobToSheet(formObject);
+      }
+
+      function scanEmails() {
+        showLoader(true);
+        google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFailure).scanEmailsForJobs();
+      }
+
+      function applyFilter() {
+        showLoader(true);
+        google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFailure).applyActiveFilter();
+      }
+
+      function onSuccess(response) {
+        showLoader(false);
+        const out = document.getElementById('output');
+        out.style.display = 'block';
+        if (response.success) {
+           out.className = 'alert alert-success mt-3';
+           out.innerText = response.message;
+           if(document.getElementById('jobForm')) document.getElementById('jobForm').reset();
+        } else {
+           out.className = 'alert alert-warning mt-3';
+           out.innerText = response.message;
+           // If error implies missing key, nudge user to settings
+           if(response.message.includes("Settings") || response.message.includes("API Key")) {
+             toggleSettings();
+           }
+        }
+        // Wait 10 seconds before hiding (for reading long logs)
+        setTimeout(() => { out.style.display = 'none'; }, 10000);
+      }
+      
+      function onFailure(error) {
+        showLoader(false);
+        const out = document.getElementById('output');
+        out.style.display = 'block';
+        out.className = 'alert alert-danger mt-3';
+        const errorMessage = error.message || String(error);
+        out.innerText = "System Error: " + errorMessage;
+      }
+
+      function showLoader(isLoading) {
+        document.getElementById('loader').style.display = isLoading ? 'block' : 'none';
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(btn => btn.disabled = isLoading);
+      }
+    </script>
+  </body>
+</html>
